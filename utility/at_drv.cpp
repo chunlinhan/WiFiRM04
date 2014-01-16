@@ -51,7 +51,7 @@ const uint16_t localSockPort[] = {SOCK0_LOCAL_PORT, SOCK1_LOCAL_PORT};
 
 char at_ok[] = "ok\r\n";
 char at_Connected[] = "Connected\r\n";
-char at_out_trans[] = "at+out_trans=0\r\r";
+char at_out_trans[] = "at+out_trans=0\r";
 char *at_remoteip[2] = {"at+remoteip=%s\r\r", "at+C2_remoteip=%s\r\r"};
 char *at_remoteport[2] = {"at+remoteport=%s\r\r", "at+C2_port=%s\r\r"};
 char *at_CLport[2] = {"at+CLport=%s\r\r", "at+C2_CLport=%s\r\r"};
