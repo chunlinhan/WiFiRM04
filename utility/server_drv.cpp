@@ -65,10 +65,10 @@ bool ServerDrv::getData(uint8_t sock, uint8_t *data, uint8_t peek)
       ret = AtDrv::read(sock);
 
     *data = (uint8_t) ret;
-	
+#ifdef _DEBUG_
 	if(ret >= 0)
 		Serial.write(*data);
-
+#endif
     return (ret < 0)? false:true;
 }
 
@@ -77,10 +77,10 @@ bool ServerDrv::getDataBuf(uint8_t sock, uint8_t *_data, uint16_t *_dataLen)
     uint16_t ret;
 
     ret = AtDrv::readBytes(sock, _data, _dataLen);
-	
+#ifdef _DEBUG_
 	if(ret)
 		Serial.write(_data, *_dataLen);
-    
+#endif
     return (ret)? true:false;
 }
 
@@ -101,8 +101,9 @@ bool ServerDrv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
     uint16_t ret;
 
     ret = AtDrv::write(sock, data, len);
-
+#ifdef _DEBUG_
 	Serial.write(data, len);
+#endif
     return (ret)? true:false;
 }
 
