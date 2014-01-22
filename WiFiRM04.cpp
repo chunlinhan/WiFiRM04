@@ -8,8 +8,13 @@ extern "C" {
 }
 
 // XXX: don't make assumptions about the value of MAX_SOCK_NUM.
+#if MAX_SOCK_NUM == 1
+int16_t 	WiFiRM04Class::_state[MAX_SOCK_NUM] = { NA_STATE };
+uint16_t 	WiFiRM04Class::_server_port[MAX_SOCK_NUM] = { 0 };
+#else
 int16_t 	WiFiRM04Class::_state[MAX_SOCK_NUM] = { NA_STATE, NA_STATE };
 uint16_t 	WiFiRM04Class::_server_port[MAX_SOCK_NUM] = { 0, 0 };
+#endif
 
 WiFiRM04Class::WiFiRM04Class()
 {
