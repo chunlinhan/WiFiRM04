@@ -49,7 +49,7 @@ typedef enum LinuxTcpState {
 class AtDrv
 {
 private:
-	static HardwareSerial serialPort[2];
+	static HardwareSerial* serialPort[2];
 	static bool atMode;
 	static uint16_t sockPort[2];
 	static QueueList<uint8_t> sock0DataQueue;

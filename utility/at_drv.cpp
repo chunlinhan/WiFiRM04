@@ -84,14 +84,14 @@ char at_ver[] = "at+ver=?\r\r";
 
 void AtDrv::begin()
 {
-	serialPort[0].begin(DEFAULT_BAUD1);
-	serialPort[1].begin(DEFAULT_BAUD2);
+	serialPort[0]->begin(DEFAULT_BAUD1);
+	serialPort[1]->begin(DEFAULT_BAUD2);
 	clearSerialRxData();
 }
 
 void AtDrv::end() {
-	serialPort[0].end();
-	serialPort[1].end();
+	serialPort[0]->end();
+	serialPort[1]->end();
 }
 
 bool AtDrv::isAtMode()
@@ -111,10 +111,10 @@ bool AtDrv::echoTest(long timeout)
 	char *token;
   
 	clearSerialRxData();
-	serialPort[0].println("#32767");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	i = serialPort[0].readBytes(buf, MAX_TEMP_BUF_SIZE);
+	serialPort[0]->println("#32767");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	i = serialPort[0]->readBytes(buf, MAX_TEMP_BUF_SIZE);
 	if(i == 0) {
 		INFO1("Echo No resp");
 		return false;
@@ -133,8 +133,8 @@ bool AtDrv::echoTest(long timeout)
 
 void AtDrv::clearSerialRxData()
 {
-	while(serialPort[0].available())
-		serialPort[0].read();
+	while(serialPort[0]->available())
+		serialPort[0]->read();
 }
 
 #ifdef USE_ESCAPE_PIN
@@ -142,7 +142,7 @@ bool AtDrv::switchToAtMode()
 {
 	int retryCount = 0;
 	// flush tx buffer's data first
-	serialPort[0].flush();
+	serialPort[0]->flush();
 retry:
 	digitalWrite(ESCAPE_PIN, ESCAPE_PIN_ACTIVE);
 	// according to user manual, delay should be > Tes time, so we plus 50ms here
@@ -152,8 +152,8 @@ retry:
 	// MUST preserve all data in rx buffer here, or these data would be mixed with at command response
 	// TODO: QueueList would cause heap fragmentation?
 	if(retryCount == 0 && sockConnected[0] == true) {
-		while(serialPort[0].available()) {
-			sock0DataQueue.push(serialPort[0].read());
+		while(serialPort[0]->available()) {
+			sock0DataQueue.push(serialPort[0]->read());
 		}
 	}
 
@@ -175,12 +175,12 @@ retry:
 bool AtDrv::switchToAtMode()
 {
 	// flush tx buffer's data first
-	serialPort[0].flush();
+	serialPort[0]->flush();
 	// preserve all data in rx buffer, or these data would be mixed with at command response
 	// TODO: QueueList would cause heap fragmentation?
 	if(sockConnected[0] == true) {
-		while(serialPort[0].available()) {
-			sock0DataQueue.push(serialPort[0].read());
+		while(serialPort[0]->available()) {
+			sock0DataQueue.push(serialPort[0]->read());
 		}
 	}
 
@@ -188,29 +188,29 @@ bool AtDrv::switchToAtMode()
 		return true;
 	
 	// flush all first
-	serialPort[0].flush();
+	serialPort[0]->flush();
 	// according to user manual, delay should be greater than Tpt, so we plus 5ms here
 	delay(TPT_TIME_IN_MS+5);
-	serialPort[0].write(0x2b);
+	serialPort[0]->write(0x2b);
 	// flush every single byte to prevent buffering effect and cause wrong timing sequence
-	serialPort[0].flush();
+	serialPort[0]->flush();
 	delay(TPT_TIME_IN_MS+5);
-	serialPort[0].write(0x2b);
-	serialPort[0].flush();
+	serialPort[0]->write(0x2b);
+	serialPort[0]->flush();
 	delay(TPT_TIME_IN_MS+5);
-	serialPort[0].write(0x2b);
-	serialPort[0].flush();
+	serialPort[0]->write(0x2b);
+	serialPort[0]->flush();
 	// according to user manual, shuold be > 400ms  < 600ms, so we use 500ms
 	delay(500);
-	serialPort[0].write(0x1b);
-	serialPort[0].flush();
+	serialPort[0]->write(0x1b);
+	serialPort[0]->flush();
 	delay(TPT_TIME_IN_MS+5);
-	serialPort[0].write(0x1b);
-	serialPort[0].flush();
+	serialPort[0]->write(0x1b);
+	serialPort[0]->flush();
 	//delayMicroseconds(tptDealy);
 	delay(TPT_TIME_IN_MS+5);
-	serialPort[0].write(0x1b);
-	serialPort[0].flush();
+	serialPort[0]->write(0x1b);
+	serialPort[0]->flush();
 	delay(TPT_TIME_IN_MS+5);
 	
 	if(echoTest()) {
@@ -233,10 +233,10 @@ bool AtDrv::switchToDataMode(long timeout)
 retry:
 	clearSerialRxData();
 	INFO1(at_out_trans);
-	serialPort[0].print(at_out_trans);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(serialPort[0].find(at_ok)) {
+	serialPort[0]->print(at_out_trans);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(serialPort[0]->find(at_ok)) {
 		setAtMode(false);
 		return true;
 	}
@@ -255,19 +255,19 @@ bool AtDrv::getRemoteIp(uint8_t sock, uint8_t *ip, long timeout)
 	sprintf(cmdBuf, at_remoteip[sock], "?");
 	clearSerialRxData();
 	INFO1(cmdBuf);
-	serialPort[0].print(cmdBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].findUntil(cmdBuf, "\r\n")) {
+	serialPort[0]->print(cmdBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->findUntil(cmdBuf, "\r\n")) {
 		INFO1("fail to get remote IP");
 		ip[0] = ip[1] = ip[2] = ip[3] = 0;
 		goto end;
 	}
 	
-	ip[0] = serialPort[0].parseInt();
-	ip[1] = serialPort[0].parseInt();
-	ip[2] = serialPort[0].parseInt();
-	ip[3] = serialPort[0].parseInt();
+	ip[0] = serialPort[0]->parseInt();
+	ip[1] = serialPort[0]->parseInt();
+	ip[2] = serialPort[0]->parseInt();
+	ip[3] = serialPort[0]->parseInt();
 	
 	INFO("Remote IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 	
@@ -286,16 +286,16 @@ bool AtDrv::getLocalPort(uint8_t sock, uint16_t *port, long timeout)
 	sprintf(cmdBuf, at_CLport[sock], "?");
 	clearSerialRxData();
 	INFO1(cmdBuf);
-	serialPort[0].print(cmdBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(cmdBuf)) {
+	serialPort[0]->print(cmdBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(cmdBuf)) {
 		INFO1("fail to get remote port");
 		*port = 0;
 		goto end;
 	}
 	
-	*port = serialPort[0].parseInt();
+	*port = serialPort[0]->parseInt();
 	
 	INFO("Local port: %d", *port);
 	
@@ -314,16 +314,16 @@ bool AtDrv::getRemotePort(uint8_t sock, uint16_t *port, long timeout)
 	sprintf(cmdBuf, at_remoteport[sock], "?");
 	clearSerialRxData();
 	INFO1(cmdBuf);
-	serialPort[0].print(cmdBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(cmdBuf)) {
+	serialPort[0]->print(cmdBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(cmdBuf)) {
 		INFO1("fail to get remote port");
 		*port = 0;
 		goto end;
 	}
 	
-	*port = serialPort[0].parseInt();
+	*port = serialPort[0]->parseInt();
 	
 	INFO("Remote port: %d", *port);
 	
@@ -356,22 +356,22 @@ void AtDrv::getLocalIp(uint8_t *ip, long timeout)
 {
 	clearSerialRxData();
 	INFO1(at_get_ip);
-	serialPort[0].print(at_get_ip);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_ip);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 	
 	// skip cmd response
-	if(!serialPort[0].find(at_get_ip)) {
+	if(!serialPort[0]->find(at_get_ip)) {
 		INFO1("fail to get local IP");
 		ip[0] = ip[1] = ip[2] = ip[3] = 0;
 		goto end;
 	}
 
-	ip[0] = serialPort[0].parseInt();
-	ip[1] = serialPort[0].parseInt();
-	ip[2] = serialPort[0].parseInt();
-	ip[3] = serialPort[0].parseInt();
+	ip[0] = serialPort[0]->parseInt();
+	ip[1] = serialPort[0]->parseInt();
+	ip[2] = serialPort[0]->parseInt();
+	ip[3] = serialPort[0]->parseInt();
 	
 	INFO("Local IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 	
@@ -384,22 +384,22 @@ void AtDrv::getNetmask(uint8_t *mask, long timeout)
 {
 	clearSerialRxData();
 	INFO1(at_get_mask);
-	serialPort[0].print(at_get_mask);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_mask);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 	
 	// skip cmd response
-	if(!serialPort[0].find(at_get_mask)) {
+	if(!serialPort[0]->find(at_get_mask)) {
 		INFO1("fail to get netmask");
 		mask[0] = mask[1] = mask[2] = mask[3] = 0;
 		goto end;
 	}
 
-	mask[0] = serialPort[0].parseInt();
-	mask[1] = serialPort[0].parseInt();
-	mask[2] = serialPort[0].parseInt();
-	mask[3] = serialPort[0].parseInt();
+	mask[0] = serialPort[0]->parseInt();
+	mask[1] = serialPort[0]->parseInt();
+	mask[2] = serialPort[0]->parseInt();
+	mask[3] = serialPort[0]->parseInt();
 	
 	INFO("Netmask: %d.%d.%d.%d", mask[0], mask[1], mask[2], mask[3]);
 	
@@ -417,19 +417,19 @@ void AtDrv::getGateway(uint8_t *gwip, long timeout)
 
 	clearSerialRxData();
 	INFO1(at_get_gateway);
-	serialPort[0].print(at_get_gateway);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_gateway);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 	
 	// skip cmd response && skip until "00000000"
-	if(!serialPort[0].find(at_get_gateway) || !serialPort[0].find("00000000")) {
+	if(!serialPort[0]->find(at_get_gateway) || !serialPort[0]->find("00000000")) {
 		INFO1("fail to get gateway");
 		gwip[0] = gwip[1] = gwip[2] = gwip[3] = 0;
 		goto end;
 	}
 	
-	bytes = serialPort[0].readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
+	bytes = serialPort[0]->readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
 	if(bytes >= MAX_LINE_BUF_SIZE) {
 		INFO1("Buffer is not enough");
 		goto end;
@@ -486,10 +486,10 @@ bool AtDrv::isWiFiConnected(long timeout)
 	
 	clearSerialRxData();
 	INFO1(at_wifi_ConState);
-	serialPort[0].print(at_wifi_ConState);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(at_Connected)) {
+	serialPort[0]->print(at_wifi_ConState);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(at_Connected)) {
 		INFO1("Not Connected");
 		goto end;
 	}
@@ -515,10 +515,10 @@ bool AtDrv::setWiFiConfig(char *ssid, int type, const char * password, long time
 	
 	clearSerialRxData();
 	INFO1(wifiConfBuf);
-	serialPort[0].print(wifiConfBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(wifiConfBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(wifiConfBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(wifiConfBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set wifi conf");
 		goto end;
 	}
@@ -537,10 +537,10 @@ bool AtDrv::setNetMode(int netMode, long timeout)
 	
 	clearSerialRxData();
 	INFO1(netModeBuf);
-	serialPort[0].print(netModeBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(netModeBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(netModeBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(netModeBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set net mode");
 		goto end;
 	}
@@ -554,8 +554,8 @@ void AtDrv::netCommit()
 {
 	clearSerialRxData();
 	INFO1(at_net_commit);
-	serialPort[0].print(at_net_commit);
-	serialPort[0].flush();
+	serialPort[0]->print(at_net_commit);
+	serialPort[0]->flush();
 	delay(30000);
 	// No any response
 }
@@ -566,10 +566,10 @@ bool AtDrv::reConnect(long timeout)
 
 	clearSerialRxData();
 	INFO1(at_reconn);
-	serialPort[0].print(at_reconn);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(at_reconn) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(at_reconn);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(at_reconn) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to reconnect");
 		goto end;
 	}
@@ -593,15 +593,15 @@ bool AtDrv::getTcpAuto(uint8_t sock, bool *enable, long timeout)
   
 	clearSerialRxData();
 	INFO1(tcpAutoBuf);
-	serialPort[0].print(tcpAutoBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(tcpAutoBuf)) {
+	serialPort[0]->print(tcpAutoBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(tcpAutoBuf)) {
 		INFO1("Fail to get tcp auto");
 		goto end;
 	}
 
-	*enable = serialPort[0].parseInt();
+	*enable = serialPort[0]->parseInt();
 
 	INFO("tcp auto: %d", *enable);
 
@@ -624,10 +624,10 @@ bool AtDrv::setTcpAuto(uint8_t sock, bool enable, long timeout)
   
 	clearSerialRxData();
 	INFO1(tcpAutoBuf);
-	serialPort[0].print(tcpAutoBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(tcpAutoBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(tcpAutoBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(tcpAutoBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set tcp auto");
 		goto end;
 	}
@@ -649,10 +649,10 @@ bool AtDrv::setDhcpd(bool enable, long timeout)
   
 	clearSerialRxData();
 	INFO1(dhcpdBuf);
-	serialPort[0].print(dhcpdBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(dhcpdBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(dhcpdBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(dhcpdBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set dhcpd");
 		goto end;
 	}
@@ -690,10 +690,10 @@ bool AtDrv::setDhcpdIp(uint32_t ipStart, uint32_t ipEnd, uint32_t mask, uint32_t
     
 	clearSerialRxData();
 	INFO1(dhcpIpBuf);
-	serialPort[0].print(dhcpIpBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(dhcpIpBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(dhcpIpBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(dhcpIpBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set dhcpd ip");
 		goto end;
 	}
@@ -723,10 +723,10 @@ bool AtDrv::setDhcpdDns(uint32_t dns1, uint32_t dns2, long timeout)
     
 	clearSerialRxData();
 	INFO1(dhcpDnsBuf);
-	serialPort[0].print(dhcpDnsBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(dhcpDnsBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(dhcpDnsBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(dhcpDnsBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set dhcpd dns");
 		goto end;
 	}
@@ -747,10 +747,10 @@ bool AtDrv::setDhcpdTime(uint32_t time, long timeout)
 
 	clearSerialRxData();
 	INFO1(dhcpTimeBuf);
-	serialPort[0].print(dhcpTimeBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(dhcpTimeBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(dhcpTimeBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(dhcpTimeBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set dhcpd time");
 		goto end;
 	}
@@ -769,15 +769,15 @@ bool AtDrv::getNetworkTimeout(uint8_t sock, uint32_t *time, long timeout)
 
 	clearSerialRxData();
 	INFO1(timeoutBuf);
-	serialPort[0].print(timeoutBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(timeoutBuf)) {
+	serialPort[0]->print(timeoutBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(timeoutBuf)) {
 		INFO1("Fail to set timeout");
 		goto end;
 	}
 	
-	*time = serialPort[0].parseInt();
+	*time = serialPort[0]->parseInt();
 	ret = true;
 	clearSerialRxData();
 end:
@@ -795,10 +795,10 @@ bool AtDrv::setNetworkTimeout(uint8_t sock, uint32_t time, long timeout)
 
 	clearSerialRxData();
 	INFO1(timeoutBuf);
-	serialPort[0].print(timeoutBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(timeoutBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(timeoutBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(timeoutBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set timeout");
 		goto end;
 	}
@@ -832,10 +832,10 @@ bool AtDrv::setNetIp(uint32_t ip, uint32_t mask, uint32_t gateway, long timeout)
 
 	clearSerialRxData();
 	INFO1(netIpBuf);
-	serialPort[0].print(netIpBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(netIpBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(netIpBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(netIpBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set net ip");
 		goto end;
 	}
@@ -865,10 +865,10 @@ bool AtDrv::setNetDns(uint32_t dns1, uint32_t dns2, long timeout)
 
 	clearSerialRxData();
 	INFO1(netDnsBuf);
-	serialPort[0].print(netDnsBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(netDnsBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(netDnsBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(netDnsBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set dhcpd dns");
 		goto end;
 	}
@@ -970,15 +970,15 @@ bool AtDrv::getMAC(uint8_t *mac, long timeout)
 	
 	clearSerialRxData();
 	INFO1(at_Get_MAC);
-	serialPort[0].print(at_Get_MAC);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(at_Get_MAC)) {
+	serialPort[0]->print(at_Get_MAC);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(at_Get_MAC)) {
 		INFO1("Fail to get MAC");
 		goto end;
 	}
   
-	bytes = serialPort[0].readBytes(buf, MAX_TEMP_BUF_SIZE);
+	bytes = serialPort[0]->readBytes(buf, MAX_TEMP_BUF_SIZE);
 	
 	if(bytes >= MAX_TEMP_BUF_SIZE) {
 		INFO1("Buffer is not enough");
@@ -1016,15 +1016,15 @@ bool AtDrv::getMode(uint8_t sock, int *mode, long timeout)
 	
 	clearSerialRxData();
 	INFO1(modeBuf);
-	serialPort[0].print(modeBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(modeBuf)) {
+	serialPort[0]->print(modeBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(modeBuf)) {
 		INFO1("Fail to get mode");
 		goto end;
 	}
 
-	bytes = serialPort[0].readBytes(modeBuf, MAX_TEMP_BUF_SIZE);
+	bytes = serialPort[0]->readBytes(modeBuf, MAX_TEMP_BUF_SIZE);
 
 	if(bytes >= MAX_TEMP_BUF_SIZE) {
 		INFO1("Buffer is not enough");
@@ -1085,10 +1085,10 @@ bool AtDrv::setMode(uint8_t sock, int mode, long timeout)
 	
 	clearSerialRxData();
 	INFO1(modeBuf);
-	serialPort[0].print(modeBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(modeBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(modeBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(modeBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set mode");
 		goto end;
 	}
@@ -1108,15 +1108,15 @@ bool AtDrv::getProtocol(uint8_t sock, uint8_t *protocol, long timeout)
 	
 	clearSerialRxData();
 	INFO1(protModeBuf);
-	serialPort[0].print(protModeBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(protModeBuf)) {
+	serialPort[0]->print(protModeBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(protModeBuf)) {
 		INFO1("Fail to get protocol");
 		goto end;
 	}
 
-	bytes = serialPort[0].readBytes(protModeBuf, MAX_TEMP_BUF_SIZE);
+	bytes = serialPort[0]->readBytes(protModeBuf, MAX_TEMP_BUF_SIZE);
 
 	if(bytes >= MAX_TEMP_BUF_SIZE) {
 		INFO1("Buffer is not enough");
@@ -1176,10 +1176,10 @@ bool AtDrv::setProtocol(uint8_t sock, uint8_t protocol, long timeout)
 	}
 	clearSerialRxData();
 	INFO1(protModeBuf);
-	serialPort[0].print(protModeBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(protModeBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(protModeBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(protModeBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set protocol");
 		goto end;
 	}
@@ -1200,10 +1200,10 @@ bool AtDrv::setLocalPort(uint8_t sock, uint16_t port, long timeout)
 	
 	clearSerialRxData();
 	INFO1(localPortBuf);
-	serialPort[0].print(localPortBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(localPortBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(localPortBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(localPortBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set local port");
 		goto end;
 	}
@@ -1224,10 +1224,10 @@ bool AtDrv::setPort(uint8_t sock, uint16_t port, long timeout)
 	
 	clearSerialRxData();
 	INFO1(remotePortBuf);
-	serialPort[0].print(remotePortBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(remotePortBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(remotePortBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(remotePortBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set port");
 		goto end;
 	}
@@ -1248,10 +1248,10 @@ bool AtDrv::setRemoteIp(uint8_t sock, uint32_t ip, long timeout)
 	
 	clearSerialRxData();
 	INFO1(remoteIpBuf);
-	serialPort[0].print(remoteIpBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(remoteIpBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(remoteIpBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(remoteIpBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set port");
 		goto end;
 	}
@@ -1272,15 +1272,15 @@ bool AtDrv::getRemoteHost(uint8_t sock, char *host, long timeout)
 	
 	clearSerialRxData();
 	INFO1(remoteHostBuf);
-	serialPort[0].print(remoteHostBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(remoteHostBuf)) {
+	serialPort[0]->print(remoteHostBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(remoteHostBuf)) {
 		INFO1("Fail to set port");
 		goto end;
 	}
 
-	bytes = serialPort[0].readBytes(remoteHostBuf, MAX_HOST_NAME_BUF_SIZE);
+	bytes = serialPort[0]->readBytes(remoteHostBuf, MAX_HOST_NAME_BUF_SIZE);
 
 	if(bytes >= MAX_HOST_NAME_BUF_SIZE) {
 		INFO1("Buffer is not enough");
@@ -1307,10 +1307,10 @@ bool AtDrv::setRemoteHost(uint8_t sock, const char *host, long timeout)
 	
 	clearSerialRxData();
 	INFO1(remoteHostBuf);
-	serialPort[0].print(remoteHostBuf);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
-	if(!serialPort[0].find(remoteHostBuf) || !serialPort[0].find(at_ok)) {
+	serialPort[0]->print(remoteHostBuf);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
+	if(!serialPort[0]->find(remoteHostBuf) || !serialPort[0]->find(at_ok)) {
 		INFO1("Fail to set port");
 		goto end;
 	}
@@ -1591,7 +1591,7 @@ uint16_t AtDrv::availData(uint8_t sock)
 	if(sock == 0)
 		len = sock0DataQueue.count();
 	
-	len += serialPort[sock].available();
+	len += serialPort[sock]->available();
 end:
 	return len;
 }
@@ -1612,7 +1612,7 @@ int AtDrv::peek(uint8_t sock)
 	if(sock == 0 && !sock0DataQueue.isEmpty())
 		c = sock0DataQueue.peek();
 	else
-		c = serialPort[sock].peek();
+		c = serialPort[sock]->peek();
 end:
 	return c;
 }
@@ -1633,7 +1633,7 @@ int AtDrv::read(uint8_t sock)
 	if(sock == 0 && !sock0DataQueue.isEmpty())
 		c = sock0DataQueue.pop();
 	else
-		c = serialPort[sock].read();
+		c = serialPort[sock]->read();
 end:
 	return c;
 }
@@ -1662,7 +1662,7 @@ uint16_t AtDrv::readBytes(uint8_t sock, uint8_t *_data, uint16_t *_dataLen)
 		*_dataLen -= len;
 	}
 
-	len += serialPort[sock].readBytes((char *)_data+len, *_dataLen);
+	len += serialPort[sock]->readBytes((char *)_data+len, *_dataLen);
 	*_dataLen = len;
 end:
 	return len;
@@ -1680,7 +1680,7 @@ uint16_t AtDrv::write(uint8_t sock, const uint8_t *data, uint16_t _len)
 		}
 	}
 	
-	len = serialPort[sock].write(data, _len);
+	len = serialPort[sock]->write(data, _len);
 end:
 	return len;
 }
@@ -1753,21 +1753,21 @@ uint8_t AtDrv::getClientState(uint8_t sock, long timeout)
 	clearSerialRxData();
 	sprintf(cmdBuf, at_tcp_port_stat, sockPort[sock]);
 	INFO1(cmdBuf);
-	serialPort[0].print(cmdBuf);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(cmdBuf);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 	
 	// skip cmd response
-	serialPort[0].find(cmdBuf);
+	serialPort[0]->find(cmdBuf);
 	
 	for(int i=0;;i++) {
 
-		found = serialPort[0].find(":");
+		found = serialPort[0]->find(":");
 
 		if(found)
 		{
-			bytes = serialPort[0].readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
+			bytes = serialPort[0]->readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
 			if(bytes >= MAX_LINE_BUF_SIZE) {
 				INFO1("Buffer is not enough");
 				goto end;
@@ -1808,9 +1808,9 @@ uint8_t AtDrv::getClientState(uint8_t sock, long timeout)
 			INFO1("Not Found");
 		}
 		
-		serialPort[0].setTimeout(SERIAL_TIMEOUT);
+		serialPort[0]->setTimeout(SERIAL_TIMEOUT);
 
-		if(!serialPort[0].available()) {
+		if(!serialPort[0]->available()) {
 			INFO1("No data");
 			break;
 		}
@@ -1838,8 +1838,8 @@ void AtDrv::stopClient(uint8_t sock)
 	}
 
 	// clear uart buffer, since we won't use it
-	while(serialPort[sock].available())
-		serialPort[sock].read();
+	while(serialPort[sock]->available())
+		serialPort[sock]->read();
 
 end:
 	sockConnected[sock] = false;
@@ -1883,17 +1883,17 @@ uint8_t AtDrv::getScanNetworks(char _networkSsid[][WL_SSID_MAX_LENGTH+1], int32_
 
 	clearSerialRxData();
 	INFO1(at_wifi_Scan);
-	serialPort[0].print(at_wifi_Scan);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_wifi_Scan);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 	
 	// skip cmd response
-	serialPort[0].find(at_wifi_Scan);
-	serialPort[0].readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
+	serialPort[0]->find(at_wifi_Scan);
+	serialPort[0]->readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
 	
 	// find item
 	do {
-		bytes = serialPort[0].readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
+		bytes = serialPort[0]->readBytesUntil('\n', lineBuf, MAX_LINE_BUF_SIZE);
 		if(bytes >= MAX_LINE_BUF_SIZE) {
 			INFO1("Buffer is not enough");
 			goto end;
@@ -1982,19 +1982,19 @@ void AtDrv::getCurrentSSID(char _ssid[], long timeout)
 
 	clearSerialRxData();
 	INFO1(at_get_ssid);
-	serialPort[0].print(at_get_ssid);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_ssid);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 
 	// skip cmd response
-	if(!serialPort[0].find(at_get_ssid)) {
+	if(!serialPort[0]->find(at_get_ssid)) {
 		INFO1("fail to get ssid");
 		_ssid[0] = NULL;
 		goto end;
 	}
 	
-	bytes = serialPort[0].readBytesUntil('\n', buf, MAX_TEMP_BUF_SIZE);
+	bytes = serialPort[0]->readBytesUntil('\n', buf, MAX_TEMP_BUF_SIZE);
 	if(bytes >= MAX_TEMP_BUF_SIZE || bytes > WL_SSID_MAX_LENGTH) {
 		INFO1("Buffer is not enough");
 		_ssid[0] = NULL;
@@ -2025,19 +2025,19 @@ void AtDrv::getCurrentBSSID(uint8_t _bssid[], long timeout)
 
 	clearSerialRxData();
 	INFO1(at_get_bssid);
-	serialPort[0].print(at_get_bssid);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_bssid);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 
 	// skip cmd response
-	if(!serialPort[0].find(at_get_bssid)) {
+	if(!serialPort[0]->find(at_get_bssid)) {
 		INFO1("fail to get bssid");
 		memset(_bssid, 0, WL_MAC_ADDR_LENGTH);
 		goto end;
 	}
 	
-	bytes = serialPort[0].readBytes(buf, MAX_TEMP_BUF_SIZE);
+	bytes = serialPort[0]->readBytes(buf, MAX_TEMP_BUF_SIZE);
 	
 	if(bytes >= MAX_TEMP_BUF_SIZE) {
 		INFO1("Buffer is not enough");
@@ -2072,19 +2072,19 @@ int32_t AtDrv::getCurrentRSSI(long timeout)
 	int32_t rssi = 0;
 	clearSerialRxData();
 	INFO1(at_get_rssi);
-	serialPort[0].print(at_get_rssi);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_rssi);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 	
 	// skip cmd response
-	if(!serialPort[0].find(at_get_rssi)) {
+	if(!serialPort[0]->find(at_get_rssi)) {
 		INFO1("fail to get rssi");
 		goto end;
 	}
 
 	// this is link qualit value (0~100)
-	rssi = serialPort[0].parseInt();
+	rssi = serialPort[0]->parseInt();
 	// convert link quality to dbm
 	rssi = (rssi/2) - 100;
 
@@ -2110,18 +2110,18 @@ uint8_t AtDrv::getCurrentEncryptionType(long timeout)
 
 	clearSerialRxData();
 	INFO1(at_get_enc);
-	serialPort[0].print(at_get_enc);
-	serialPort[0].print("\r\r");
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_get_enc);
+	serialPort[0]->print("\r\r");
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 
 	// skip cmd response
-	if(!serialPort[0].find(at_get_enc)) {
+	if(!serialPort[0]->find(at_get_enc)) {
 		INFO1("fail to get enc type");
 		goto end;
 	}
 	
-	bytes = serialPort[0].readBytesUntil('\n', buf, MAX_TEMP_BUF_SIZE);
+	bytes = serialPort[0]->readBytesUntil('\n', buf, MAX_TEMP_BUF_SIZE);
 	if(bytes >= MAX_TEMP_BUF_SIZE) {
 		INFO1("Buffer is not enough");
 		goto end;
@@ -2166,17 +2166,17 @@ void AtDrv::getFwVersion(char fwVersion[], uint8_t bufLength, long timeout)
 
 	clearSerialRxData();
 	INFO1(at_ver);
-	serialPort[0].print(at_ver);
-	serialPort[0].flush();
-	serialPort[0].setTimeout(timeout);
+	serialPort[0]->print(at_ver);
+	serialPort[0]->flush();
+	serialPort[0]->setTimeout(timeout);
 
 	// skip cmd response and '\n'
-	if(!serialPort[0].find(at_ver) || !serialPort[0].find("\n")) {
+	if(!serialPort[0]->find(at_ver) || !serialPort[0]->find("\n")) {
 		INFO1("fail to get firmware version");
 		goto end;
 	}
 	
-	bytes = serialPort[0].readBytesUntil('\r', fwVersion, bufLength);
+	bytes = serialPort[0]->readBytesUntil('\r', fwVersion, bufLength);
 	fwVersion[bytes] = NULL;
 
 end:
@@ -2187,7 +2187,7 @@ end:
 uint8_t AtDrv::checkDataSent(uint8_t sock)
 {
 	// Since RM04 can't check data sent status, jsut flush our UART buffer instead
-	serialPort[sock].flush();
+	serialPort[sock]->flush();
 	return 1;
 }
 
@@ -2204,7 +2204,7 @@ AtDrv::AtDrv()
 
 AtDrv atDrv;
 
-HardwareSerial AtDrv::serialPort[] = {AT_DRV_SERIAL, AT_DRV_SERIAL1};
+HardwareSerial* AtDrv::serialPort[] = {&AT_DRV_SERIAL, &AT_DRV_SERIAL1};
 bool AtDrv::atMode = false;
 uint16_t AtDrv::sockPort[2] = {0};
 QueueList<uint8_t> AtDrv::sock0DataQueue;
