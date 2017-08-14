@@ -66,11 +66,7 @@ typedef unsigned long uint32;
 typedef volatile unsigned long vuint32;
 
 /* bsd */
-typedef uint8			u_char;		/**< 8-bit value */
 typedef uint16_t 			SOCKET;
-typedef uint16			u_short;	/**< 16-bit value */
-typedef uint16			u_int;		/**< 16-bit value */
-typedef uint32			u_long;		/**< 32-bit value */
 
 extern SOCKET socket(uint8 protocol); // Opens a socket(TCP or UDP or IP_RAW mode)
 extern void close(SOCKET s); // Close socket
